@@ -4,10 +4,10 @@ from functools import wraps
 
 import numpy as np
 import tensorflow as tf
-from keras import backend as K
-from keras.layers import Conv2D, Add, ZeroPadding2D, UpSampling2D, Concatenate, MaxPooling2D
-from keras.layers.advanced_activations import LeakyReLU
-from keras.layers.normalization import BatchNormalization
+import keras
+import keras.backend.tensorflow_backend as K
+from keras.layers import Conv2D, Add, ZeroPadding2D, UpSampling2D, Concatenate, MaxPooling2D, LeakyReLU
+from keras.layers import BatchNormalization
 from keras.models import Model
 from keras.regularizers import l2
 
@@ -211,10 +211,10 @@ def yolo_eval(yolo_outputs,
     scores_ = []
     classes_ = []
     for c in range(num_classes):
-        # TODO: use keras backend instead of tf.
-        class_boxes = tf.boolean_mask(boxes, mask[:, c])
-        class_box_scores = tf.boolean_mask(box_scores[:, c], mask[:, c])
-        nms_index = tf.image.non_max_suppression(
+        # TODO: use keras backend instead of K.
+        class_boxes = K.boolean_mask(boxes, mask[:, c])
+        class_box_scores = K.boolean_mask(box_scores[:, c], mask[:, c])
+        nms_index = K.image.non_max_suppression(
             class_boxes, class_box_scores, max_boxes_tensor, iou_threshold=iou_threshold)
         class_boxes = K.gather(class_boxes, nms_index)
         class_box_scores = K.gather(class_box_scores, nms_index)

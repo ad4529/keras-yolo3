@@ -8,6 +8,11 @@ import os
 from timeit import default_timer as timer
 
 import numpy as np
+import tensorflow
+config = tensorflow.ConfigProto()
+config.gpu_options.allow_growth = True
+session = tensorflow.Session(config=config)
+import keras
 from keras import backend as K
 from keras.models import load_model
 from keras.layers import Input
@@ -17,6 +22,8 @@ from yolo3.model import yolo_eval, yolo_body, tiny_yolo_body
 from yolo3.utils import letterbox_image
 import os
 from keras.utils import multi_gpu_model
+
+
 
 class YOLO(object):
     _defaults = {
@@ -169,28 +176,28 @@ class YOLO(object):
     def close_session(self):
         self.sess.close()
 
-def detect_video(yolo, video_path, output_path=""):
+def detect_video(yolo, video_path, output_path="./video1.avi"):
     import cv2
-    vid = cv2.VideoCapture(video_path)
+    vid = cv2.VideoCapture(0)
+    vid.set(3,640)
+    vid.set(4,480)
     if not vid.isOpened():
         raise IOError("Couldn't open webcam or video")
-    video_FourCC    = int(vid.get(cv2.CAP_PROP_FOURCC))
-    video_fps       = vid.get(cv2.CAP_PROP_FPS)
-    video_size      = (int(vid.get(cv2.CAP_PROP_FRAME_WIDTH)),
-                        int(vid.get(cv2.CAP_PROP_FRAME_HEIGHT)))
+    fourcc = cv2.VideoWriter_fourcc(*'XVID')
     isOutput = True if output_path != "" else False
-    if isOutput:
-        print("!!! TYPE:", type(output_path), type(video_FourCC), type(video_fps), type(video_size))
-        out = cv2.VideoWriter(output_path, video_FourCC, video_fps, video_size)
+    #print("!!! TYPE:", type(output_path), type(video_FourCC), type(video_fps), type(video_size))
+    out = cv2.VideoWriter(output_path, fourcc, 60.0, (640,480))
     accum_time = 0
     curr_fps = 0
     fps = "FPS: ??"
     prev_time = timer()
     while True:
         return_value, frame = vid.read()
+        print('Captured frame {}'.format(frame.shape))
         image = Image.fromarray(frame)
         image = yolo.detect_image(image)
         result = np.asarray(image)
+        print("Result {}".format(result.shape))
         curr_time = timer()
         exec_time = curr_time - prev_time
         prev_time = curr_time
@@ -209,4 +216,7 @@ def detect_video(yolo, video_path, output_path=""):
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
     yolo.close_session()
+    vid.release()
+    out.release()
+    cv2.destroyAllWindows()
 
